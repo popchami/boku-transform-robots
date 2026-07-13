@@ -1,0 +1,15 @@
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary files
+*.log
+*.tmp
+tmp/
+
