@@ -42,6 +42,12 @@
 | PC | 開発・デバッグ・動画合成の確認 | 基本はTermuxと同じスクリプトが動くことを目指す |
 | RunPod（GPU） | AI画像生成・重い処理 | Network Volume 0GB運用のため、セッション毎に環境再構築が発生する前提で設計する |
 
+## 実装状況（2026-07-13時点）
+
+- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
+- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。`render`（動画合成）は未実装のプレースホルダ
+- `tests/`: `unittest`によるvalidator・CLIのテスト
+
 ## 今回のスコープ
 
 最初はmp4生成までを対象とする。SNS自動投稿は後回し。

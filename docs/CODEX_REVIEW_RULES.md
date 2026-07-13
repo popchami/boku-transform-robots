@@ -23,6 +23,14 @@
 
 | 日付 | 依頼内容 | Codexの回答概要 | 対応 |
 |---|---|---|---|
-| （未実施） | | | |
+| 2026-07-13 | 初期設計一式（README/SPEC/WORKFLOW/REPO_RESEARCH/CODEX_REVIEW_RULES, 8dc638b）のレビュー | 方針は整合、重大な矛盾なし。TTS・画像生成は今固定せず保留が妥当。最小安全実装として「生成済み素材を受け取りFFmpeg合成するvalidateコア」を提案。TTSは公式調査の結果、Piperは現行版で日本語voice未提供＋v1.3以降GPLv3、旧rhasspy版はarchive済みのため既定候補から除外。edge-ttsはオンライン依存のためoptional provider扱いに限定。字幕タイミングは初版は台本/manifestで手動秒指定（ASRは後日差し替え）。実装はepisode.json（標準JSONのみ、追加依存なし）のvalidator + unittest + `validate`専用CLI scaffoldから着手し、render本体・TTS・画像生成は次段階でレビューしてから着手する方針。 | 下記「決定事項」に反映。src/bokurobo/manifest.py・cli.py、tests/test_manifest.py、episodes/_template/episode.json を実装 |
 
 実施したら、このテーブルに追記する。
+
+## 決定事項（2026-07-13 Codexレビューを反映）
+
+- **TTSエンジン**: 未確定のまま据え置き。Piperは現行版で日本語voice未提供＋GPLv3のため既定候補から除外。edge-ttsはオンラインEdgeサービス依存のためoptional provider扱いに限定し、初版では確定させない。当面は事前生成済み音声ファイルを入力として扱う
+- **テロップのタイミング取得方法**: 初版は台本/`episode.json`のシーン単位で手動秒指定とする（15〜20秒の短尺では再現性・Termux負荷面で優位なため）。ASR（音声認識による自動抽出）は将来差し替え候補として残す
+- **機械可読データ形式**: `episodes/<話数>/episode.json`（標準JSONのみ、追加ライブラリ不要）。人間向けの`plan.md`と併用する
+- **パイプライン分割**: `validate`（マニフェスト検証）→`render`（動画合成、未実装）の2段構成。今回は`validate`のみ実装
+- **依存方針**: Python標準ライブラリ中心、外部Pythonパッケージ追加なし。ffmpeg/ffprobeは実行時依存（未導入でも`validate`は動作し、該当チェックは警告に留める）
