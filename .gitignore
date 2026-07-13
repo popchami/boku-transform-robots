@@ -13,3 +13,22 @@
 *.tmp
 tmp/
 
+# Generated video / audio output (mp4等の生成物はGit管理しない)
+output/
+*.mp4
+*.wav
+*.mp3
+
+# AI生成の中間ファイル（画像・音声キャッシュ等）
+.cache/
+*.tmp.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node（将来Remotion等を検討する場合に備えて）
+node_modules/
+
