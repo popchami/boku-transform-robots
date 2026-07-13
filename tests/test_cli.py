@@ -58,6 +58,28 @@ class CliValidateTests(unittest.TestCase):
             exit_code = main(["validate", str(manifest_path), "--base-dir", str(base)])
             self.assertEqual(exit_code, 1)
 
+    def test_malformed_types_do_not_raise_unhandled_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = _write_valid_manifest(base)
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            data["title"] = 12345
+            data["scenes"][0]["captions"] = "分割されると困る"
+            manifest_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            # ManifestErrorはcli内で捕捉されexit 1になるべきで、例外が外に漏れてはならない
+            exit_code = main(["validate", str(manifest_path), "--base-dir", str(base)])
+            self.assertEqual(exit_code, 1)
+
+    def test_output_path_traversal_exits_nonzero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = _write_valid_manifest(base)
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            data["output"] = "output/../../outside.mp4"
+            manifest_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            exit_code = main(["validate", str(manifest_path), "--base-dir", str(base)])
+            self.assertEqual(exit_code, 1)
+
 
 class CliRenderTests(unittest.TestCase):
     def test_render_is_not_implemented(self) -> None:

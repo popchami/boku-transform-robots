@@ -2,10 +2,16 @@
 
 標準ライブラリのみに依存する。ffprobeは実行時に見つかれば使う任意の外部
 コマンドであり、未導入でも validate は動作し、該当チェックは警告に留める。
+
+読み込み(load_manifest)は型・構造の正しさを保証し、不正な入力は
+ManifestError を送出する。検証(validate_episode)はファイル存在・
+パストラバーサル・尺・命名規則などの業務ルールを Issue のリストとして返す
+（例外は投げない）。
 """
 from __future__ import annotations
 
 import json
+import math
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -14,11 +20,13 @@ from typing import Any
 
 REQUIRED_SCENE_IDS = ("intro", "before", "transform", "after", "punchline")
 ALLOWED_CATEGORIES = ("animal", "plant", "building", "food", "daily_goods")
+ALLOWED_TRANSITIONS = ("cut", "zoom")
 MIN_TOTAL_DURATION_SEC = 15.0
 MAX_TOTAL_DURATION_SEC = 20.0
 NARRATION_DURATION_TOLERANCE_SEC = 1.0
 BANNED_WORDS = ("トランスフォーマー", "transformer", "Transformers")
 FFMPEG_TEXT_SPECIAL_CHARS = set(":'\\%[],;")
+OUTPUT_EXTENSION = ".mp4"
 
 
 class ManifestError(ValueError):
@@ -55,6 +63,35 @@ class Episode:
     font: str | None = None
 
 
+def _require_str(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ManifestError(f"{field_name} は文字列である必要があります: {value!r}")
+    return value
+
+
+def _optional_str(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_str(value, field_name)
+
+
+def _require_finite_number(value: Any, field_name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ManifestError(f"{field_name} は数値である必要があります: {value!r}")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ManifestError(f"{field_name} は有限の数値である必要があります（NaN/Infinity不可）: {value!r}")
+    return number
+
+
+def _require_str_list(value: Any, field_name: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ManifestError(f"{field_name} は文字列のリストである必要があります: {value!r}")
+    return value
+
+
 def load_manifest(path: Path) -> Episode:
     try:
         raw_text = path.read_text(encoding="utf-8")
@@ -69,36 +106,42 @@ def load_manifest(path: Path) -> Episode:
     if not isinstance(data, dict):
         raise ManifestError(f"マニフェストのトップレベルはオブジェクトである必要があります: {path}")
 
-    try:
-        scenes_raw = data["scenes"]
-        if not isinstance(scenes_raw, list):
-            raise ManifestError(f"'scenes' はリストである必要があります: {path}")
-        scenes = [
-            Scene(
-                id=s["id"],
-                duration_sec=float(s["duration_sec"]),
-                image=s.get("image"),
-                narration_audio=s.get("narration_audio"),
-                captions=list(s.get("captions", [])),
-                sfx=list(s.get("sfx", [])),
-                transition=s.get("transition", "cut"),
-            )
-            for s in scenes_raw
-        ]
-        episode = Episode(
-            episode_id=data["episode_id"],
-            title=data["title"],
-            category=data["category"],
-            output=data["output"],
-            scenes=scenes,
-            font=data.get("font"),
-        )
-    except KeyError as exc:
-        raise ManifestError(f"必須フィールドがありません: {exc} ({path})") from exc
-    except (TypeError, ValueError) as exc:
-        raise ManifestError(f"マニフェストの形式が不正です: {exc} ({path})") from exc
+    missing = [key for key in ("episode_id", "title", "category", "output", "scenes") if key not in data]
+    if missing:
+        raise ManifestError(f"必須フィールドがありません: {missing} ({path})")
 
-    return episode
+    scenes_raw = data["scenes"]
+    if not isinstance(scenes_raw, list):
+        raise ManifestError(f"'scenes' はリストである必要があります: {path}")
+
+    scenes: list[Scene] = []
+    for index, raw_scene in enumerate(scenes_raw):
+        if not isinstance(raw_scene, dict):
+            raise ManifestError(f"scenes[{index}] はオブジェクトである必要があります: {raw_scene!r}")
+        if "id" not in raw_scene or "duration_sec" not in raw_scene:
+            raise ManifestError(f"scenes[{index}] に id/duration_sec がありません: {raw_scene!r}")
+        scenes.append(
+            Scene(
+                id=_require_str(raw_scene["id"], f"scenes[{index}].id"),
+                duration_sec=_require_finite_number(raw_scene["duration_sec"], f"scenes[{index}].duration_sec"),
+                image=_optional_str(raw_scene.get("image"), f"scenes[{index}].image"),
+                narration_audio=_optional_str(
+                    raw_scene.get("narration_audio"), f"scenes[{index}].narration_audio"
+                ),
+                captions=_require_str_list(raw_scene.get("captions"), f"scenes[{index}].captions"),
+                sfx=_require_str_list(raw_scene.get("sfx"), f"scenes[{index}].sfx"),
+                transition=_require_str(raw_scene.get("transition", "cut"), f"scenes[{index}].transition"),
+            )
+        )
+
+    return Episode(
+        episode_id=_require_str(data["episode_id"], "episode_id"),
+        title=_require_str(data["title"], "title"),
+        category=_require_str(data["category"], "category"),
+        output=_require_str(data["output"], "output"),
+        scenes=scenes,
+        font=_optional_str(data.get("font"), "font"),
+    )
 
 
 def _check_ffmpeg_text(text: str, where: str) -> list[Issue]:
@@ -117,8 +160,37 @@ def _contains_banned_word(text: str) -> bool:
     return any(word.lower() in lowered for word in BANNED_WORDS)
 
 
-def _resolve(base_dir: Path, rel_path: str) -> Path:
-    return (base_dir / rel_path).resolve()
+def _resolve_within(base_dir: Path, rel_path: str, where: str) -> tuple[Path | None, Issue | None]:
+    """rel_path を base_dir 配下に安全に解決する。base_dir外を指す場合はIssueを返す。"""
+    candidate = Path(rel_path)
+    if candidate.is_absolute():
+        return None, Issue("error", f"{where} は絶対パスではなく相対パスである必要があります: {rel_path!r}")
+
+    resolved_base = base_dir.resolve()
+    resolved = (resolved_base / candidate).resolve()
+    try:
+        resolved.relative_to(resolved_base)
+    except ValueError:
+        return None, Issue(
+            "error", f"{where} は base_dir の外を指しています（'../'等のパストラバーサル不可）: {rel_path!r}"
+        )
+    return resolved, None
+
+
+def _validate_output_path(base_dir: Path, output: str) -> Issue | None:
+    candidate = Path(output)
+    if candidate.is_absolute():
+        return Issue("error", f"output は絶対パスではなく相対パスである必要があります: {output!r}")
+    if candidate.suffix.lower() != OUTPUT_EXTENSION:
+        return Issue("error", f"output は{OUTPUT_EXTENSION}拡張子である必要があります: {output!r}")
+
+    output_root = (base_dir.resolve() / "output").resolve()
+    resolved = (base_dir.resolve() / candidate).resolve()
+    try:
+        resolved.relative_to(output_root)
+    except ValueError:
+        return Issue("error", f"output は 'output/' 配下でなければなりません（パストラバーサル不可）: {output!r}")
+    return None
 
 
 def _probe_duration_sec(path: Path) -> float | None:
@@ -180,11 +252,9 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
             )
         )
 
-    output_path = Path(episode.output)
-    if output_path.is_absolute() or output_path.parts[:1] != ("output",):
-        issues.append(
-            Issue("error", f"output は 'output/' 配下の相対パスである必要があります: {episode.output!r}")
-        )
+    output_issue = _validate_output_path(base_dir, episode.output)
+    if output_issue:
+        issues.append(output_issue)
 
     if _contains_banned_word(episode.title):
         issues.append(
@@ -192,8 +262,10 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
         )
 
     if episode.font:
-        font_path = _resolve(base_dir, episode.font)
-        if not font_path.is_file():
+        font_path, font_issue = _resolve_within(base_dir, episode.font, "font")
+        if font_issue:
+            issues.append(font_issue)
+        elif not font_path.is_file():
             issues.append(Issue("error", f"font が見つかりません: {episode.font}"))
 
     for scene in episode.scenes:
@@ -204,16 +276,28 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                 Issue("error", f"{where}.duration_sec は正の数である必要があります: {scene.duration_sec}")
             )
 
+        if scene.transition not in ALLOWED_TRANSITIONS:
+            issues.append(
+                Issue(
+                    "error",
+                    f"{where}.transition は {ALLOWED_TRANSITIONS} のいずれかである必要があります: {scene.transition!r}",
+                )
+            )
+
         if scene.image:
-            image_path = _resolve(base_dir, scene.image)
-            if not image_path.is_file():
+            image_path, image_issue = _resolve_within(base_dir, scene.image, f"{where}.image")
+            if image_issue:
+                issues.append(image_issue)
+            elif not image_path.is_file():
                 issues.append(Issue("error", f"{where}.image が見つかりません: {scene.image}"))
         else:
             issues.append(Issue("error", f"{where}.image が指定されていません"))
 
         if scene.narration_audio:
-            audio_path = _resolve(base_dir, scene.narration_audio)
-            if not audio_path.is_file():
+            audio_path, audio_issue = _resolve_within(base_dir, scene.narration_audio, f"{where}.narration_audio")
+            if audio_issue:
+                issues.append(audio_issue)
+            elif not audio_path.is_file():
                 issues.append(
                     Issue("error", f"{where}.narration_audio が見つかりません: {scene.narration_audio}")
                 )
@@ -236,8 +320,10 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                     )
 
         for sfx in scene.sfx:
-            sfx_path = _resolve(base_dir, sfx)
-            if not sfx_path.is_file():
+            sfx_path, sfx_issue = _resolve_within(base_dir, sfx, f"{where}.sfx")
+            if sfx_issue:
+                issues.append(sfx_issue)
+            elif not sfx_path.is_file():
                 issues.append(Issue("error", f"{where}.sfx が見つかりません: {sfx}"))
 
         for caption in scene.captions:

@@ -71,6 +71,69 @@ class LoadManifestTests(unittest.TestCase):
         with self.assertRaises(ManifestError):
             load_manifest(Path("/nonexistent/episode.json"))
 
+    def test_non_string_title_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["title"] = 12345
+            with self.assertRaises(ManifestError):
+                load_manifest(_write_manifest(base, data))
+
+    def test_captions_as_string_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][0]["captions"] = "1文字ずつ分割されると困る文字列"
+            with self.assertRaises(ManifestError):
+                load_manifest(_write_manifest(base, data))
+
+    def test_sfx_as_string_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][2]["sfx"] = "sfx.wav"
+            with self.assertRaises(ManifestError):
+                load_manifest(_write_manifest(base, data))
+
+    def test_non_object_scene_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][0] = "intro"
+            with self.assertRaises(ManifestError):
+                load_manifest(_write_manifest(base, data))
+
+    def test_bool_duration_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][0]["duration_sec"] = True
+            with self.assertRaises(ManifestError):
+                load_manifest(_write_manifest(base, data))
+
+    def test_nan_duration_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            raw = json.dumps(data, ensure_ascii=False)
+            path = base / "episode.json"
+            # json標準ライブラリはNaN/Infinityを許容してdumpするため、直接埋め込む
+            raw = raw.replace('"duration_sec": 3', '"duration_sec": NaN', 1)
+            path.write_text(raw, encoding="utf-8")
+            with self.assertRaises(ManifestError):
+                load_manifest(path)
+
+    def test_infinity_duration_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            raw = json.dumps(data, ensure_ascii=False)
+            raw = raw.replace('"duration_sec": 3', '"duration_sec": Infinity', 1)
+            path = base / "episode.json"
+            path.write_text(raw, encoding="utf-8")
+            with self.assertRaises(ManifestError):
+                load_manifest(path)
+
 
 class ValidateEpisodeTests(unittest.TestCase):
     def test_valid_manifest_has_no_errors(self) -> None:
@@ -153,6 +216,60 @@ class ValidateEpisodeTests(unittest.TestCase):
             episode = load_manifest(_write_manifest(base, data))
             issues = validate_episode(episode, base)
             self.assertTrue(any(i.level == "warning" and "エスケープ" in i.message for i in issues))
+
+    def test_output_path_traversal_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["output"] = "output/../../outside.mp4"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "パストラバーサル" in i.message for i in issues))
+
+    def test_output_absolute_path_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["output"] = "/etc/passwd.mp4"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "絶対パス" in i.message for i in issues))
+
+    def test_output_without_mp4_extension_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["output"] = "output/ep001.mov"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "拡張子" in i.message for i in issues))
+
+    def test_asset_path_traversal_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][0]["image"] = "../../etc/passwd"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "パストラバーサル" in i.message for i in issues))
+
+    def test_asset_absolute_path_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["font"] = "/etc/passwd"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "絶対パス" in i.message for i in issues))
+
+    def test_unknown_transition_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][1]["transition"] = "wipe"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "transition" in i.message for i in issues))
 
 
 if __name__ == "__main__":
