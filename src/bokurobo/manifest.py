@@ -21,6 +21,7 @@ from typing import Any
 REQUIRED_SCENE_IDS = ("intro", "before", "transform", "after", "punchline")
 ALLOWED_CATEGORIES = ("animal", "plant", "building", "food", "daily_goods")
 ALLOWED_TRANSITIONS = ("cut", "zoom")
+ALLOWED_VIDEO_EXTENSIONS = (".mp4",)
 MIN_TOTAL_DURATION_SEC = 15.0
 MAX_TOTAL_DURATION_SEC = 20.0
 NARRATION_DURATION_TOLERANCE_SEC = 1.0
@@ -47,6 +48,7 @@ class Scene:
     id: str
     duration_sec: float
     image: str | None = None
+    video: str | None = None
     narration_audio: str | None = None
     captions: list[str] = field(default_factory=list)
     sfx: list[str] = field(default_factory=list)
@@ -125,6 +127,7 @@ def load_manifest(path: Path) -> Episode:
                 id=_require_str(raw_scene["id"], f"scenes[{index}].id"),
                 duration_sec=_require_finite_number(raw_scene["duration_sec"], f"scenes[{index}].duration_sec"),
                 image=_optional_str(raw_scene.get("image"), f"scenes[{index}].image"),
+                video=_optional_str(raw_scene.get("video"), f"scenes[{index}].video"),
                 narration_audio=_optional_str(
                     raw_scene.get("narration_audio"), f"scenes[{index}].narration_audio"
                 ),
@@ -284,14 +287,42 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                 )
             )
 
-        if scene.image:
-            image_path, image_issue = _resolve_within(base_dir, scene.image, f"{where}.image")
-            if image_issue:
-                issues.append(image_issue)
-            elif not image_path.is_file():
-                issues.append(Issue("error", f"{where}.image が見つかりません: {scene.image}"))
+        if scene.id == "transform":
+            # SPEC(2026-07-14版): transform は AI生成動画必須、他4シーンは静止画。
+            # 静止画フォールバックは方針と矛盾するため設けず、video必須のerrorに統一する。
+            if scene.image and scene.video:
+                issues.append(
+                    Issue(
+                        "error",
+                        f"{where} は image と video を同時に指定できません（transform は video のみを使用します）",
+                    )
+                )
+            elif scene.video:
+                video_path, video_issue = _resolve_within(base_dir, scene.video, f"{where}.video")
+                if video_issue:
+                    issues.append(video_issue)
+                elif not video_path.is_file():
+                    issues.append(Issue("error", f"{where}.video が見つかりません: {scene.video}"))
+                elif video_path.suffix.lower() not in ALLOWED_VIDEO_EXTENSIONS:
+                    issues.append(
+                        Issue(
+                            "error",
+                            f"{where}.video の拡張子は {ALLOWED_VIDEO_EXTENSIONS} のいずれかである必要があります: {scene.video!r}",
+                        )
+                    )
+            else:
+                issues.append(Issue("error", f"{where}.video が指定されていません（transform は動画必須です）"))
         else:
-            issues.append(Issue("error", f"{where}.image が指定されていません"))
+            if scene.video:
+                issues.append(Issue("error", f"{where}.video は transform シーンでのみ指定できます"))
+            if scene.image:
+                image_path, image_issue = _resolve_within(base_dir, scene.image, f"{where}.image")
+                if image_issue:
+                    issues.append(image_issue)
+                elif not image_path.is_file():
+                    issues.append(Issue("error", f"{where}.image が見つかりません: {scene.image}"))
+            else:
+                issues.append(Issue("error", f"{where}.image が指定されていません"))
 
         if scene.narration_audio:
             audio_path, audio_issue = _resolve_within(base_dir, scene.narration_audio, f"{where}.narration_audio")

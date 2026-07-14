@@ -26,7 +26,7 @@
     {
       "id": "transform",
       "duration_sec": 4,
-      "image": "episodes/ep000_template/transform.png",
+      "video": "episodes/ep000_template/transform.mp4",
       "narration_audio": "episodes/ep000_template/transform.wav",
       "captions": ["へんしん！"],
       "sfx": ["assets/sfx/（変形音）.wav"],

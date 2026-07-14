@@ -14,6 +14,7 @@ from bokurobo.cli import main  # noqa: E402
 
 def _write_valid_manifest(base_dir: Path) -> Path:
     (base_dir / "image.png").touch()
+    (base_dir / "transform.mp4").touch()
     data = {
         "episode_id": "ep001",
         "title": "そうじきロボ",
@@ -22,7 +23,7 @@ def _write_valid_manifest(base_dir: Path) -> Path:
         "scenes": [
             {"id": "intro", "duration_sec": 3, "image": "image.png"},
             {"id": "before", "duration_sec": 3, "image": "image.png"},
-            {"id": "transform", "duration_sec": 4, "image": "image.png"},
+            {"id": "transform", "duration_sec": 4, "video": "transform.mp4"},
             {"id": "after", "duration_sec": 6, "image": "image.png"},
             {"id": "punchline", "duration_sec": 4, "image": "image.png"},
         ],

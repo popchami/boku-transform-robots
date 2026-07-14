@@ -25,7 +25,7 @@
 |---|---|---|---|
 | 2026-07-13 | 初期設計一式（README/SPEC/WORKFLOW/REPO_RESEARCH/CODEX_REVIEW_RULES, 8dc638b）のレビュー | 方針は整合、重大な矛盾なし。TTS・画像生成は今固定せず保留が妥当。最小安全実装として「生成済み素材を受け取りFFmpeg合成するvalidateコア」を提案。TTSは公式調査の結果、Piperは現行版で日本語voice未提供＋v1.3以降GPLv3、旧rhasspy版はarchive済みのため既定候補から除外。edge-ttsはオンライン依存のためoptional provider扱いに限定。字幕タイミングは初版は台本/manifestで手動秒指定（ASRは後日差し替え）。実装はepisode.json（標準JSONのみ、追加依存なし）のvalidator + unittest + `validate`専用CLI scaffoldから着手し、render本体・TTS・画像生成は次段階でレビューしてから着手する方針。 | 下記「決定事項」に反映。src/bokurobo/manifest.py・cli.py、tests/test_manifest.py、episodes/_template/episode.json を実装 |
 | 2026-07-13 | manifest validator + CLI実装(1806c55)のコードレビュー依頼 | P1×2件（outputパストラバーサル、asset絶対パス/トラバーサル）、P2×2件（JSON型検証不足、NaN/Infinity/未知transition）を指摘。render着手前の必須修正として承認保留 | b560364で修正、テスト15件追加（計32件）、Codex側で再検証しPASS・承認済み |
-| （予定） | 変形シーンAI動画生成への方針転換（2026-07-14）を踏まえた設計見直し依頼 | （未実施） | ユーザーからのフィードバックを受け、下記「決定事項」に追記。docs更新後にCodexへ共有予定 |
+| 2026-07-14 | 変形シーンAI動画生成への方針転換（2026-07-14）を踏まえた設計見直し、およびScene.video対応（未コミット差分）の実装レビュー依頼。初回指摘4点: (1)非transformシーンのvideo指定はファイル有無に関係なくerror (2)transformのimage+video同時指定を禁止しerror (3)SPEC(2026-07-14版)に合わせtransformのvideo必須化（静止画フォールバック廃止） (4)videoの許容拡張子(.mp4のみ)を検証 | ユーザーフィードバックを受けた方針転換は下記「決定事項」に反映済み。実装方針は妥当と回答。実装後、独立再検証で39 tests PASS・`git diff --check` OKを確認し承認 | `docs/SPEC.md`・`docs/WORKFLOW.md`の決定事項を更新、`src/bokurobo/manifest.py`・`tests/test_manifest.py`・`tests/test_cli.py`・`episodes/_template/episode.json`を更新（コミットはせずレビュー待ち） |
 
 実施したら、このテーブルに追記する。
 

@@ -46,10 +46,10 @@
 | PC | 開発・デバッグ・動画合成の確認 | 基本はTermuxと同じスクリプトが動くことを目指す |
 | RunPod（GPU） | AI画像生成・変形シーンのAI動画生成・重い処理 | Network Volume 0GB運用のため、セッション毎に環境再構築が発生する前提で設計する。動画生成モデルはVRAM/DL時間の負荷が画像生成より大きいため、コスト試算を別途行う |
 
-## 実装状況（2026-07-13時点）
+## 実装状況（2026-07-14時点）
 
-- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
-- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。`render`（動画合成）は未実装のプレースホルダ
+- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。`transform`のみ`video`、他シーンは`image`を指定する。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
+- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。`render`（動画合成）は未実装のプレースホルダ。validatorは`transform`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他4シーンは`video`指定自体をerrorとする
 - `tests/`: `unittest`によるvalidator・CLIのテスト
 
 ## 今回のスコープ
