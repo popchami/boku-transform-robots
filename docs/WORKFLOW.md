@@ -1,0 +1,65 @@
+# WORKFLOW（作業フロー）
+
+現時点では未実装のため、以下は想定フロー案。実装前にCodexレビューで妥当性を確認する。
+
+## 全体の流れ
+
+```
+1. お題決定
+   └─ 動物・植物・建物・食べ物・日用品などから題材を選ぶ
+        （episodes/_template/ を元に episodes/<話数>/ を作成）
+
+2. 企画データ作成（episodes/<話数>/plan.md 等）
+   └─ 題材名、変形ロボの設定・特徴、オチ/コメントの台本を書く
+        （台本はLLMで下書きしてもよいが、最終的な設定・ネタは人間が確定する）
+
+3. AI静止画生成（変形以外の4シーン）
+   └─ お題提示・変形前・変形後・オチ用のビジュアルを生成
+        （既存のComfyUI/Flux環境を流用するか未定 → docs/SPEC.md 参照）
+
+3.5. AI動画生成（変形シーンのみ、2026-07-14追加）
+   └─ 「変形」シーンをtext-to-videoで生成（4秒程度想定。2026-07-14時点でimage-to-videoから変更）
+        （モデル・実行環境・コストは未検証 → docs/SPEC.md「変形シーンのAI動画生成」参照）
+
+4. AIナレーション音声生成
+   └─ 台本をTTSで音声化（エンジン未定）
+
+5. テロップ・タイミング決定
+   └─ ナレーション音声に合わせて表示タイミングを決定
+
+6. 効果音選定
+   └─ assets/sfx/ から場面に合う効果音を選ぶ
+
+7. 動画合成
+   └─ （変形以外）静止画＋ズーム/切り替え、（変形のみ）生成済み動画クリップ、をそれぞれナレーション＋テロップ＋効果音とFFmpegベースで合成し、mp4を出力
+        （output/ に出力、Git管理はしない）
+
+8. 確認・調整
+   └─ 生成されたmp4を確認し、必要に応じて台本・画像・タイミングを調整して再生成
+```
+
+## 実行環境ごとの想定
+
+| 環境 | 用途 | 注意点 |
+|---|---|---|
+| スマホ（Termux） | 企画データ作成・軽い確認作業 | Docker必須・重量ローカルモデル前提の処理は避ける |
+| PC | 開発・デバッグ・動画合成の確認 | 基本はTermuxと同じスクリプトが動くことを目指す |
+| RunPod（GPU） | AI画像生成・変形シーンのAI動画生成・重い処理 | Network Volume 0GB運用のため、セッション毎に環境再構築が発生する前提で設計する。動画生成モデルはVRAM/DL時間の負荷が画像生成より大きいため、コスト試算を別途行う |
+
+## 実装状況（2026-07-14時点）
+
+- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。`transform`のみ`video`、他シーンは`image`を指定する。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
+- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。validatorは`transform`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他4シーンは`video`指定自体をerrorとする
+- `src/bokurobo/render.py` / `cli.py`: `docs/RENDER_DESIGN.md`（Codexレビュー承認済み）に基づく最小render実装 と `render`専用CLI（`python -m bokurobo.cli render <episode.json> [--base-dir <dir>] [--dry-run]`）。シーン単位クリップ＋concat demuxerでmp4を合成する。実ffmpeg/ffprobeによる5シーンのスモークテストも完了（詳細は`docs/RENDER_DESIGN.md` 8章）
+- `tests/`: `unittest`によるvalidator・CLI・renderのテスト
+
+## 今回のスコープ
+
+最初はmp4生成までを対象とする。SNS自動投稿は後回し。
+
+## 未確定事項
+
+- episodes/ 配下のデータ形式（Markdown or JSON/YAML）
+- 手動作業とスクリプト自動化の境界線（どこまで自動化するか）
+- 生成パイプラインを1本のスクリプトにするか、工程ごとに分割するか
+- 変形シーンのtext-to-video生成手段（モデル・実行環境・コスト、2026-07-14方針変更に伴い追加。同日中にimage-to-video→text-to-videoへさらに変更、docs/SPEC.md参照）

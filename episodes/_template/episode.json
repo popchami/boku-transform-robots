@@ -1,0 +1,54 @@
+{
+  "episode_id": "ep000_template",
+  "title": "（題材名）ロボ",
+  "category": "daily_goods",
+  "font": "assets/fonts/（使用フォント）.ttf",
+  "output": "output/ep000_template.mp4",
+  "scenes": [
+    {
+      "id": "intro",
+      "duration_sec": 3,
+      "image": "episodes/ep000_template/intro.png",
+      "narration_audio": "episodes/ep000_template/intro.wav",
+      "captions": ["きょうのお題は…"],
+      "sfx": [],
+      "transition": "cut"
+    },
+    {
+      "id": "before",
+      "duration_sec": 3,
+      "image": "episodes/ep000_template/before.png",
+      "narration_audio": "episodes/ep000_template/before.wav",
+      "captions": [],
+      "sfx": [],
+      "transition": "zoom"
+    },
+    {
+      "id": "transform",
+      "duration_sec": 4,
+      "video": "episodes/ep000_template/transform.mp4",
+      "narration_audio": "episodes/ep000_template/transform.wav",
+      "captions": ["へんしん！"],
+      "sfx": ["assets/sfx/（変形音）.wav"],
+      "transition": "zoom"
+    },
+    {
+      "id": "after",
+      "duration_sec": 6,
+      "image": "episodes/ep000_template/after.png",
+      "narration_audio": "episodes/ep000_template/after.wav",
+      "captions": ["（ロボ名）とうじょう！"],
+      "sfx": ["assets/sfx/（決めポーズ音）.wav"],
+      "transition": "zoom"
+    },
+    {
+      "id": "punchline",
+      "duration_sec": 4,
+      "image": "episodes/ep000_template/punchline.png",
+      "narration_audio": "episodes/ep000_template/punchline.wav",
+      "captions": ["（一言オチ/コメント）"],
+      "sfx": [],
+      "transition": "cut"
+    }
+  ]
+}

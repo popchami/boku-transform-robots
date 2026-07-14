@@ -8,8 +8,31 @@
 .idea/
 .vscode/
 
+# ローカル・マシン固有のエージェントセッションフック設定（絶対パスを含むためGit管理外）
+.codex/hooks.json
+
 # Temporary files
 *.log
 *.tmp
 tmp/
+
+# Generated video / audio output (mp4等の生成物はGit管理しない)
+output/
+*.mp4
+*.wav
+*.mp3
+
+# AI生成の中間ファイル（画像・音声キャッシュ等）
+.cache/
+*.tmp.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Node（将来Remotion等を検討する場合に備えて）
+node_modules/
 
