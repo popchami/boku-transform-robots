@@ -8,6 +8,9 @@
 .idea/
 .vscode/
 
+# ローカル・マシン固有のエージェントセッションフック設定（絶対パスを含むためGit管理外）
+.codex/hooks.json
+
 # Temporary files
 *.log
 *.tmp
@@ -28,6 +31,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+*.egg-info/
 
 # Node（将来Remotion等を検討する場合に備えて）
 node_modules/

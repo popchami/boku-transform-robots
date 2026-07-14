@@ -50,10 +50,35 @@ bokurobo/
 │   ├── sfx/                    # 効果音
 │   ├── fonts/                  # テロップ用フォント
 │   └── bgm/                    # BGM
-├── src/                       # 生成パイプラインのコード（未実装）
+├── src/                       # 生成パイプラインのコード（bokuroboパッケージ）
+├── tests/                     # unittestによるテスト
 └── output/                    # 生成物（mp4等）※Git管理外
+```
+
+## セットアップ
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+## 実行
+
+```
+# episode.json の検証
+python -m bokurobo.cli validate episodes/<話数>/episode.json
+
+# 動画の合成（要 ffmpeg/ffprobe）
+python -m bokurobo.cli render episodes/<話数>/episode.json
+```
+
+## テスト
+
+```
+python -m unittest discover -s tests
 ```
 
 ## 状態
 
-設計・調査フェーズ。実装はまだ行っていない。詳細は `docs/SPEC.md` と `docs/WORKFLOW.md` を参照。
+`episode.json`マニフェストのvalidatorと`render`（FFmpegベースの動画合成）を実装済み。詳細は `docs/SPEC.md` と `docs/WORKFLOW.md` を参照。TTSエンジン・変形シーンのAI動画生成モデルなど、生成AI周りの実行環境は未確定・未実装。
