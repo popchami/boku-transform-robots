@@ -18,7 +18,7 @@
         （既存のComfyUI/Flux環境を流用するか未定 → docs/SPEC.md 参照）
 
 3.5. AI動画生成（変形シーンのみ、2026-07-14追加）
-   └─ 「変形」シーンをimage-to-videoで生成（4秒程度想定）
+   └─ 「変形」シーンをtext-to-videoで生成（4秒程度想定。2026-07-14時点でimage-to-videoから変更）
         （モデル・実行環境・コストは未検証 → docs/SPEC.md「変形シーンのAI動画生成」参照）
 
 4. AIナレーション音声生成
@@ -49,8 +49,9 @@
 ## 実装状況（2026-07-14時点）
 
 - `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。`transform`のみ`video`、他シーンは`image`を指定する。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
-- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。`render`（動画合成）は未実装のプレースホルダ。validatorは`transform`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他4シーンは`video`指定自体をerrorとする
-- `tests/`: `unittest`によるvalidator・CLIのテスト
+- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。validatorは`transform`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他4シーンは`video`指定自体をerrorとする
+- `src/bokurobo/render.py` / `cli.py`: `docs/RENDER_DESIGN.md`（Codexレビュー承認済み）に基づく最小render実装 と `render`専用CLI（`python -m bokurobo.cli render <episode.json> [--base-dir <dir>] [--dry-run]`）。シーン単位クリップ＋concat demuxerでmp4を合成する。実ffmpeg/ffprobeによる5シーンのスモークテストも完了（詳細は`docs/RENDER_DESIGN.md` 8章）
+- `tests/`: `unittest`によるvalidator・CLI・renderのテスト
 
 ## 今回のスコープ
 
@@ -61,4 +62,4 @@
 - episodes/ 配下のデータ形式（Markdown or JSON/YAML）
 - 手動作業とスクリプト自動化の境界線（どこまで自動化するか）
 - 生成パイプラインを1本のスクリプトにするか、工程ごとに分割するか
-- 変形シーンのimage-to-video生成手段（モデル・実行環境・コスト、2026-07-14方針変更に伴い追加、docs/SPEC.md参照）
+- 変形シーンのtext-to-video生成手段（モデル・実行環境・コスト、2026-07-14方針変更に伴い追加。同日中にimage-to-video→text-to-videoへさらに変更、docs/SPEC.md参照）

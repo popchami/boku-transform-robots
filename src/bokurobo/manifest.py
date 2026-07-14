@@ -147,17 +147,6 @@ def load_manifest(path: Path) -> Episode:
     )
 
 
-def _check_ffmpeg_text(text: str, where: str) -> list[Issue]:
-    if any(ch in FFMPEG_TEXT_SPECIAL_CHARS for ch in text):
-        return [
-            Issue(
-                "warning",
-                f"{where} にffmpeg drawtext/subtitlesでエスケープが必要な文字が含まれています（render時に要対応）: {text!r}",
-            )
-        ]
-    return []
-
-
 def _contains_banned_word(text: str) -> bool:
     lowered = text.lower()
     return any(word.lower() in lowered for word in BANNED_WORDS)
@@ -358,7 +347,6 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                 issues.append(Issue("error", f"{where}.sfx が見つかりません: {sfx}"))
 
         for caption in scene.captions:
-            issues.extend(_check_ffmpeg_text(caption, f"{where}.captions"))
             if _contains_banned_word(caption):
                 issues.append(
                     Issue(

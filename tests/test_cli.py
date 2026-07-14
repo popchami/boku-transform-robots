@@ -6,10 +6,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bokurobo.cli import main  # noqa: E402
+from bokurobo.render import CommandStep, RenderError, RenderResult, WriteFileStep  # noqa: E402
 
 
 def _write_valid_manifest(base_dir: Path) -> Path:
@@ -83,9 +85,63 @@ class CliValidateTests(unittest.TestCase):
 
 
 class CliRenderTests(unittest.TestCase):
-    def test_render_is_not_implemented(self) -> None:
-        exit_code = main(["render"])
-        self.assertEqual(exit_code, 2)
+    """render_episode 自体の挙動は tests/test_render.py で検証する。
+    ここではCLIの引数配線・戻り値/例外に応じた終了コードのみを確認する。"""
+
+    def test_render_without_manifest_arg_exits_via_argparse_error(self) -> None:
+        with self.assertRaises(SystemExit) as cm:
+            main(["render"])
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_render_broken_manifest_exits_nonzero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = base / "episode.json"
+            manifest_path.write_text("{not json", encoding="utf-8")
+            exit_code = main(["render", str(manifest_path)])
+            self.assertEqual(exit_code, 1)
+
+    def test_render_dry_run_reports_plan_and_exits_zero(self) -> None:
+        import contextlib
+        import io
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = _write_valid_manifest(base)
+            fake_plan = [
+                WriteFileStep(path=base / "concat_list.txt", content="file 'a.mp4'\n"),
+                CommandStep(description="concat", argv=["ffmpeg", "-f", "concat"], produces=base / "final.mp4"),
+            ]
+            fake_result = RenderResult(plan=fake_plan, output_path=base / "output" / "ep001.mp4", dry_run=True)
+            stdout = io.StringIO()
+            with mock.patch("bokurobo.cli.render_episode", return_value=fake_result) as mock_render, contextlib.redirect_stdout(
+                stdout
+            ):
+                exit_code = main(["render", str(manifest_path), "--base-dir", str(base), "--dry-run"])
+            self.assertEqual(exit_code, 0)
+            mock_render.assert_called_once()
+            self.assertTrue(mock_render.call_args.kwargs["dry_run"])
+            output = stdout.getvalue()
+            self.assertIn("[write]", output)
+            self.assertIn("[command]", output)
+            self.assertIn("concat", output)
+
+    def test_render_success_exits_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = _write_valid_manifest(base)
+            fake_result = RenderResult(plan=[], output_path=base / "output" / "ep001.mp4", dry_run=False)
+            with mock.patch("bokurobo.cli.render_episode", return_value=fake_result):
+                exit_code = main(["render", str(manifest_path), "--base-dir", str(base)])
+            self.assertEqual(exit_code, 0)
+
+    def test_render_error_exits_nonzero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            manifest_path = _write_valid_manifest(base)
+            with mock.patch("bokurobo.cli.render_episode", side_effect=RenderError("boom")):
+                exit_code = main(["render", str(manifest_path), "--base-dir", str(base)])
+            self.assertEqual(exit_code, 1)
 
 
 if __name__ == "__main__":

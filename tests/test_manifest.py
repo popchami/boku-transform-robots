@@ -279,14 +279,16 @@ class ValidateEpisodeTests(unittest.TestCase):
             issues = validate_episode(episode, base)
             self.assertTrue(any(i.level == "error" and "font が見つかりません" in i.message for i in issues))
 
-    def test_caption_with_special_char_is_warning(self) -> None:
+    def test_caption_with_special_char_is_not_a_warning(self) -> None:
+        # render側がcaption本文をtextfile=経由で渡す（フィルタパーサを経由しない）ため、
+        # ffmpegエスケープ文字を含んでいてもvalidate時点でのwarningは不要（docs/RENDER_DESIGN.md 3.5参照）。
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             data = _minimal_manifest_data(base)
             data["scenes"][0]["captions"] = ["時刻: 12:34にへんしん！"]
             episode = load_manifest(_write_manifest(base, data))
             issues = validate_episode(episode, base)
-            self.assertTrue(any(i.level == "warning" and "エスケープ" in i.message for i in issues))
+            self.assertFalse(any("エスケープ" in i.message for i in issues))
 
     def test_output_path_traversal_is_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
