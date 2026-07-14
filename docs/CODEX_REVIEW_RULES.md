@@ -5,7 +5,7 @@
 - **実装（コード作成）に着手する前に、必ずCodexへagmsgでレビュー依頼を送る**
 - レビュー対象は、設計ドキュメント一式（README.md / docs/SPEC.md / docs/WORKFLOW.md / docs/REPO_RESEARCH.md）と、これから書こうとしている実装方針
 - Codexからの指摘・懸念点は、実装前にこのリポジトリのIssue的な位置づけ（docs内の該当ファイルへの追記、または本ファイルの「レビュー履歴」セクション）で記録する
-- Codexの受信方式は `turn` ではなく `monitor` を使用し、継続的にメッセージを確認する（`/root/.claude/CLAUDE.md` の共通ルールに準拠）
+- Codexの受信方式は `turn` ではなく `monitor` を使用し、継続的にメッセージを確認する（ユーザーのグローバル共通ルール(CLAUDE.md/AGENTS.md)に準拠）
 
 ## レビュー依頼のタイミング
 
