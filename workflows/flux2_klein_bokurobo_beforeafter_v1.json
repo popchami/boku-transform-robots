@@ -1,0 +1,1460 @@
+{
+  "id": "flux2-klein-bokurobo-beforeafter",
+  "revision": 0,
+  "last_node_id": 20,
+  "last_link_id": 25,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        320,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "unet_name",
+          "type": "COMBO",
+          "label": "unet_name",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "label": "weight_dtype",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1,
+            2
+          ],
+          "label": "MODEL"
+        }
+      ],
+      "title": "Load Diffusion Model【Flux.2 Klein FP8】",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "flux-2-klein-9b-fp8.safetensors",
+        "fp8_e4m3fn"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        140
+      ],
+      "size": [
+        320,
+        106
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_name",
+          "type": "COMBO",
+          "label": "clip_name",
+          "widget": {
+            "name": "clip_name"
+          },
+          "link": null
+        },
+        {
+          "name": "type",
+          "type": "COMBO",
+          "label": "type",
+          "widget": {
+            "name": "type"
+          },
+          "link": null
+        },
+        {
+          "name": "device",
+          "type": "COMBO",
+          "label": "device",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3,
+            4,
+            5
+          ],
+          "label": "CLIP"
+        }
+      ],
+      "title": "Load Text Encoder【Qwen3-8B FP8】",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen_3_8b_fp8mixed.safetensors",
+        "flux2",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        280
+      ],
+      "size": [
+        320,
+        82
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "label": "vae_name",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            6,
+            7
+          ],
+          "label": "VAE"
+        }
+      ],
+      "title": "Load VAE【Flux.2 VAE】",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "flux2-vae.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "OllamaConnectivityV2",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        400,
+        154
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "connection",
+          "type": "OLLAMA_CONNECTIVITY",
+          "links": [
+            8,
+            9
+          ],
+          "label": "connectivity"
+        }
+      ],
+      "title": "Ollama Connectivity V2（共有・qwen3.5ライン）",
+      "properties": {
+        "cnr_id": "comfyui-ollama",
+        "ver": "6db7560576e5a59488708e6be13e07b5aba2432a",
+        "Node name for S&R": "OllamaConnectivityV2"
+      },
+      "widgets_values": [
+        "http://127.0.0.1:11434",
+        "jaahas/qwen3.5-uncensored:9b",
+        5,
+        "minutes",
+        null
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 11,
+      "type": "CLIPTextEncode",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        400,
+        120
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "label": "clip",
+          "link": 5
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "label": "text",
+          "widget": {
+            "name": "text"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            18,
+            19
+          ],
+          "label": "CONDITIONING"
+        }
+      ],
+      "title": "Negative Prompt（共通・変形前後で同一）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "blurry, low quality, deformed shape, extra objects, duplicated object, morphing artifacts, motion blur, text, watermark, inconsistent lighting, changed background, changed camera angle"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "EmptyLatentImage",
+      "pos": [
+        0,
+        780
+      ],
+      "size": [
+        300,
+        110
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "label": "width",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "label": "height",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "batch_size",
+          "type": "INT",
+          "label": "batch_size",
+          "widget": {
+            "name": "batch_size"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20,
+            21
+          ],
+          "label": "LATENT"
+        }
+      ],
+      "title": "Empty Latent【768×1344・背景/カメラ共通用】※解像度は要確認・仮値",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        768,
+        1344,
+        1
+      ]
+    },
+    {
+      "id": 5,
+      "type": "StringConcatenate",
+      "pos": [
+        360,
+        0
+      ],
+      "size": [
+        350,
+        166
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "title": "ユーザー入力（日本語・変形前）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "StringConcatenate"
+      },
+      "widgets_values": [
+        "【ここに変形前（例：テレビ）の日本語プロンプトを貼り付け】",
+        "",
+        ", "
+      ]
+    },
+    {
+      "id": 6,
+      "type": "OllamaGenerateV2",
+      "pos": [
+        700,
+        0
+      ],
+      "size": [
+        450,
+        400
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "connectivity",
+          "type": "OLLAMA_CONNECTIVITY",
+          "label": "connectivity",
+          "link": 8
+        },
+        {
+          "name": "options",
+          "type": "OLLAMA_OPTIONS",
+          "label": "options",
+          "link": null
+        },
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "label": "images",
+          "link": null
+        },
+        {
+          "name": "context",
+          "type": "OLLAMA_CONTEXT",
+          "label": "context",
+          "link": null
+        },
+        {
+          "name": "meta",
+          "type": "OLLAMA_META",
+          "label": "meta",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "label": "prompt",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": [
+            11
+          ],
+          "label": "result"
+        },
+        {
+          "name": "thinking",
+          "type": "STRING",
+          "links": [],
+          "label": "thinking"
+        },
+        {
+          "name": "context",
+          "type": "OLLAMA_CONTEXT",
+          "links": [],
+          "label": "context"
+        },
+        {
+          "name": "meta",
+          "type": "OLLAMA_META",
+          "links": [],
+          "label": "meta"
+        }
+      ],
+      "title": "Ollama翻訳 - 変形前（think=OFF）",
+      "properties": {
+        "cnr_id": "comfyui-ollama",
+        "ver": "6db7560576e5a59488708e6be13e07b5aba2432a",
+        "Node name for S&R": "OllamaGenerateV2"
+      },
+      "widgets_values": [
+        "/no_think\nYou are a translator for image generation using FLUX.2 Klein.\nThis is for a children's short video about a toy-like transforming robot.\nTranslate the Japanese input to English prose exactly as written.\n\nOutput rules:\n- Translation only. No additions, no omissions, no embellishment.\n- Keep all specified details (background, camera angle, part-to-part correspondence) exactly as given.\n- Maximum 100 words.\n- Prose format, not tag lists.",
+        false,
+        false,
+        "text",
+        "text"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [
+        1200,
+        0
+      ],
+      "size": [
+        400,
+        100
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "label": "clip",
+          "link": 3
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "label": "text",
+          "widget": {
+            "name": "text"
+          },
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            14
+          ],
+          "label": "CONDITIONING"
+        }
+      ],
+      "title": "Positive Prompt - 変形前（LLMから自動入力）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "← Ollamaから自動入力"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "FluxGuidance",
+      "pos": [
+        1600,
+        0
+      ],
+      "size": [
+        280,
+        60
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "label": "conditioning",
+          "link": 14
+        },
+        {
+          "name": "guidance",
+          "type": "FLOAT",
+          "label": "guidance",
+          "widget": {
+            "name": "guidance"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            16
+          ],
+          "label": "CONDITIONING"
+        }
+      ],
+      "title": "Guidance - 変形前",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        2
+      ]
+    },
+    {
+      "id": 15,
+      "type": "KSampler",
+      "pos": [
+        1950,
+        0
+      ],
+      "size": [
+        320,
+        280
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "label": "model",
+          "link": 1
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "label": "positive",
+          "link": 16
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "label": "negative",
+          "link": 18
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "label": "latent_image",
+          "link": 20
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "label": "seed",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "label": "steps",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "cfg",
+          "type": "FLOAT",
+          "label": "cfg",
+          "widget": {
+            "name": "cfg"
+          },
+          "link": null
+        },
+        {
+          "name": "sampler_name",
+          "type": "COMBO",
+          "label": "sampler_name",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        },
+        {
+          "name": "scheduler",
+          "type": "COMBO",
+          "label": "scheduler",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "name": "denoise",
+          "type": "FLOAT",
+          "label": "denoise",
+          "widget": {
+            "name": "denoise"
+          },
+          "link": null
+        },
+        {
+          "name": "control_after_generate",
+          "type": "COMBO",
+          "label": "control_after_generate",
+          "widget": {
+            "name": "control_after_generate"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            22
+          ],
+          "label": "LATENT"
+        }
+      ],
+      "title": "KSampler - 変形前【Seed固定】",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        20260715,
+        10,
+        1,
+        "dpmpp_2m",
+        "simple",
+        1,
+        "fixed"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "VAEDecode",
+      "pos": [
+        2300,
+        0
+      ],
+      "size": [
+        210,
+        50
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "label": "samples",
+          "link": 22
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "label": "vae",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            24
+          ],
+          "label": "IMAGE"
+        }
+      ],
+      "title": "Decode - 変形前",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "SaveImage",
+      "pos": [
+        2600,
+        0
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "label": "images",
+          "link": 24
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "label": "filename_prefix",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "title": "Save - 変形前",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "bokurobo_before"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "StringConcatenate",
+      "pos": [
+        360,
+        500
+      ],
+      "size": [
+        350,
+        166
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "title": "ユーザー入力（日本語・変形後）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "StringConcatenate"
+      },
+      "widgets_values": [
+        "【ここに変形後（例：ロボ）の日本語プロンプトを貼り付け】",
+        "",
+        ", "
+      ]
+    },
+    {
+      "id": 9,
+      "type": "OllamaGenerateV2",
+      "pos": [
+        700,
+        500
+      ],
+      "size": [
+        450,
+        400
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "connectivity",
+          "type": "OLLAMA_CONNECTIVITY",
+          "label": "connectivity",
+          "link": 9
+        },
+        {
+          "name": "options",
+          "type": "OLLAMA_OPTIONS",
+          "label": "options",
+          "link": null
+        },
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "label": "images",
+          "link": null
+        },
+        {
+          "name": "context",
+          "type": "OLLAMA_CONTEXT",
+          "label": "context",
+          "link": null
+        },
+        {
+          "name": "meta",
+          "type": "OLLAMA_META",
+          "label": "meta",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "label": "prompt",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": [
+            13
+          ],
+          "label": "result"
+        },
+        {
+          "name": "thinking",
+          "type": "STRING",
+          "links": [],
+          "label": "thinking"
+        },
+        {
+          "name": "context",
+          "type": "OLLAMA_CONTEXT",
+          "links": [],
+          "label": "context"
+        },
+        {
+          "name": "meta",
+          "type": "OLLAMA_META",
+          "links": [],
+          "label": "meta"
+        }
+      ],
+      "title": "Ollama翻訳 - 変形後（think=OFF）",
+      "properties": {
+        "cnr_id": "comfyui-ollama",
+        "ver": "6db7560576e5a59488708e6be13e07b5aba2432a",
+        "Node name for S&R": "OllamaGenerateV2"
+      },
+      "widgets_values": [
+        "/no_think\nYou are a translator for image generation using FLUX.2 Klein.\nThis is for a children's short video about a toy-like transforming robot.\nTranslate the Japanese input to English prose exactly as written.\n\nOutput rules:\n- Translation only. No additions, no omissions, no embellishment.\n- Keep all specified details (background, camera angle, part-to-part correspondence) exactly as given.\n- Maximum 100 words.\n- Prose format, not tag lists.",
+        false,
+        false,
+        "text",
+        "text"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 10,
+      "type": "CLIPTextEncode",
+      "pos": [
+        1200,
+        500
+      ],
+      "size": [
+        400,
+        100
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "label": "clip",
+          "link": 4
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "label": "text",
+          "widget": {
+            "name": "text"
+          },
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            15
+          ],
+          "label": "CONDITIONING"
+        }
+      ],
+      "title": "Positive Prompt - 変形後（LLMから自動入力）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "← Ollamaから自動入力"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "FluxGuidance",
+      "pos": [
+        1600,
+        500
+      ],
+      "size": [
+        280,
+        60
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "label": "conditioning",
+          "link": 15
+        },
+        {
+          "name": "guidance",
+          "type": "FLOAT",
+          "label": "guidance",
+          "widget": {
+            "name": "guidance"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ],
+          "label": "CONDITIONING"
+        }
+      ],
+      "title": "Guidance - 変形後",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        2
+      ]
+    },
+    {
+      "id": 16,
+      "type": "KSampler",
+      "pos": [
+        1950,
+        500
+      ],
+      "size": [
+        320,
+        280
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "label": "model",
+          "link": 2
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "label": "positive",
+          "link": 17
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "label": "negative",
+          "link": 19
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "label": "latent_image",
+          "link": 21
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "label": "seed",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "label": "steps",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "cfg",
+          "type": "FLOAT",
+          "label": "cfg",
+          "widget": {
+            "name": "cfg"
+          },
+          "link": null
+        },
+        {
+          "name": "sampler_name",
+          "type": "COMBO",
+          "label": "sampler_name",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        },
+        {
+          "name": "scheduler",
+          "type": "COMBO",
+          "label": "scheduler",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "name": "denoise",
+          "type": "FLOAT",
+          "label": "denoise",
+          "widget": {
+            "name": "denoise"
+          },
+          "link": null
+        },
+        {
+          "name": "control_after_generate",
+          "type": "COMBO",
+          "label": "control_after_generate",
+          "widget": {
+            "name": "control_after_generate"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            23
+          ],
+          "label": "LATENT"
+        }
+      ],
+      "title": "KSampler - 変形後【Seed固定・変形前と同一値】",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        20260715,
+        10,
+        1,
+        "dpmpp_2m",
+        "simple",
+        1,
+        "fixed"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "VAEDecode",
+      "pos": [
+        2300,
+        500
+      ],
+      "size": [
+        210,
+        50
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "label": "samples",
+          "link": 23
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "label": "vae",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            25
+          ],
+          "label": "IMAGE"
+        }
+      ],
+      "title": "Decode - 変形後",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "SaveImage",
+      "pos": [
+        2600,
+        500
+      ],
+      "size": [
+        400,
+        300
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "label": "images",
+          "link": 25
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "label": "filename_prefix",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "title": "Save - 変形後",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "bokurobo_after"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      1,
+      0,
+      16,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      2,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      2,
+      0,
+      10,
+      0,
+      "CLIP"
+    ],
+    [
+      5,
+      2,
+      0,
+      11,
+      0,
+      "CLIP"
+    ],
+    [
+      6,
+      3,
+      0,
+      17,
+      1,
+      "VAE"
+    ],
+    [
+      7,
+      3,
+      0,
+      18,
+      1,
+      "VAE"
+    ],
+    [
+      8,
+      4,
+      0,
+      6,
+      0,
+      "OLLAMA_CONNECTIVITY"
+    ],
+    [
+      9,
+      4,
+      0,
+      9,
+      0,
+      "OLLAMA_CONNECTIVITY"
+    ],
+    [
+      10,
+      5,
+      0,
+      6,
+      5,
+      "STRING"
+    ],
+    [
+      11,
+      6,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      12,
+      8,
+      0,
+      9,
+      5,
+      "STRING"
+    ],
+    [
+      13,
+      9,
+      0,
+      10,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      7,
+      0,
+      13,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      15,
+      10,
+      0,
+      14,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      16,
+      13,
+      0,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      17,
+      14,
+      0,
+      16,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      11,
+      0,
+      15,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      11,
+      0,
+      16,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      20,
+      12,
+      0,
+      15,
+      3,
+      "LATENT"
+    ],
+    [
+      21,
+      12,
+      0,
+      16,
+      3,
+      "LATENT"
+    ],
+    [
+      22,
+      15,
+      0,
+      17,
+      0,
+      "LATENT"
+    ],
+    [
+      23,
+      16,
+      0,
+      18,
+      0,
+      "LATENT"
+    ],
+    [
+      24,
+      17,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      18,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "frontendVersion": "1.44.19"
+  },
+  "version": 0.4
+}
