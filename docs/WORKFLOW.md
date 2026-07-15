@@ -13,13 +13,14 @@
    └─ 題材名、変形ロボの設定・特徴、オチ/コメントの台本を書く
         （台本はLLMで下書きしてもよいが、最終的な設定・ネタは人間が確定する）
 
-3. AI静止画生成（変形以外の4シーン）
-   └─ お題提示・変形前・変形後・オチ用のビジュアルを生成
-        （既存のComfyUI/Flux環境を流用するか未定 → docs/SPEC.md 参照）
+3. AI静止画生成（お題提示・変形前・変形後・オチの4枚。既存のComfyUI/Flux.2 Klein 9B環境を流用）
+   └─ 「変形前」「変形後」の2枚はFlux.2 Klein 9Bワークフロー`flux2_klein_bokurobo_beforeafter_v2.json`で1組として生成
+        （詳細 → docs/SPEC.md 参照）
 
-3.5. AI動画生成（変形シーンのみ、2026-07-14追加）
-   └─ 「変形」シーンをtext-to-videoで生成（4秒程度想定。2026-07-14時点でimage-to-videoから変更）
-        （モデル・実行環境・コストは未検証 → docs/SPEC.md「変形シーンのAI動画生成」参照）
+3.5. AI動画生成（変形・決めポーズの2シーン、2026-07-15更新）
+   └─ 「変形前」画像を起点にimage-to-video（Wan 2.2 I2V 14B FP8）で"溜め"の動きを生成 → transformシーン（4秒程度、末尾にフラッシュ合成）
+   └─ 「変形後」画像を起点に同じくimage-to-videoで"決めポーズ"の動きを生成 → afterシーン
+        （モデル・実行環境・コストは未検証 → docs/SPEC.md「変形・決めポーズシーンのAI動画生成」参照）
 
 4. AIナレーション音声生成
    └─ 台本をTTSで音声化（エンジン未定）
@@ -31,7 +32,7 @@
    └─ assets/sfx/ から場面に合う効果音を選ぶ
 
 7. 動画合成
-   └─ （変形以外）静止画＋ズーム/切り替え、（変形のみ）生成済み動画クリップ、をそれぞれナレーション＋テロップ＋効果音とFFmpegベースで合成し、mp4を出力
+   └─ （お題提示・変形前・オチ）静止画＋ズーム/切り替え、（変形・決めポーズ）生成済み動画クリップ、をそれぞれナレーション＋テロップ＋効果音とFFmpegベースで合成し、mp4を出力
         （output/ に出力、Git管理はしない）
 
 8. 確認・調整
@@ -46,10 +47,10 @@
 | PC | 開発・デバッグ・動画合成の確認 | 基本はTermuxと同じスクリプトが動くことを目指す |
 | RunPod（GPU） | AI画像生成・変形シーンのAI動画生成・重い処理 | Network Volume 0GB運用のため、セッション毎に環境再構築が発生する前提で設計する。動画生成モデルはVRAM/DL時間の負荷が画像生成より大きいため、コスト試算を別途行う |
 
-## 実装状況（2026-07-14時点）
+## 実装状況（2026-07-15時点）
 
-- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。`transform`のみ`video`、他シーンは`image`を指定する。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
-- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。validatorは`transform`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他4シーンは`video`指定自体をerrorとする
+- `episodes/_template/episode.json`: 機械可読マニフェストのテンプレート。`transform`と`after`は`video`、他3シーンは`image`を指定する。プレースホルダのパスを含むため、そのままでは`validate`は通らない（実素材を配置してから使う）
+- `src/bokurobo/manifest.py` / `cli.py`: `episode.json`のvalidator と `validate`専用CLI（`python -m bokurobo.cli validate <episode.json> [--base-dir <dir>]`）。validatorは`transform`/`after`シーンに`video`必須（`.mp4`のみ許可、静止画フォールバックは廃止）・`image`との同時指定はerror、他3シーンは`video`指定自体をerrorとする
 - `src/bokurobo/render.py` / `cli.py`: `docs/RENDER_DESIGN.md`（Codexレビュー承認済み）に基づく最小render実装 と `render`専用CLI（`python -m bokurobo.cli render <episode.json> [--base-dir <dir>] [--dry-run]`）。シーン単位クリップ＋concat demuxerでmp4を合成する。実ffmpeg/ffprobeによる5シーンのスモークテストも完了（詳細は`docs/RENDER_DESIGN.md` 8章）
 - `tests/`: `unittest`によるvalidator・CLI・renderのテスト
 
@@ -62,4 +63,4 @@
 - episodes/ 配下のデータ形式（Markdown or JSON/YAML）
 - 手動作業とスクリプト自動化の境界線（どこまで自動化するか）
 - 生成パイプラインを1本のスクリプトにするか、工程ごとに分割するか
-- 変形シーンのtext-to-video生成手段（モデル・実行環境・コスト、2026-07-14方針変更に伴い追加。同日中にimage-to-video→text-to-videoへさらに変更、docs/SPEC.md参照）
+- Wan 2.2 I2V 14B FP8の実行環境・コスト試算（2026-07-15にtext-to-video前提からimage-to-video＋フラッシュカット方式へ変更、docs/SPEC.md参照）

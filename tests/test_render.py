@@ -365,14 +365,14 @@ def _which_ffprobe_only(name: str) -> str | None:
 
 def _valid_episode_minimal() -> Episode:
     # REQUIRED_SCENE_IDSは5シーン固定・total durationは15-20秒必須なので、
-    # transformにはvideoが必須（image+videoの併用は不可）。
+    # transform/after にはvideoが必須（image+videoの併用は不可、SPEC 2026-07-15版）。
     return Episode(
         episode_id="e", title="t", category="daily_goods", output="output/o.mp4",
         scenes=[
             Scene(id="intro", duration_sec=3.0, image="i1.png"),
             Scene(id="before", duration_sec=3.0, image="i2.png"),
             Scene(id="transform", duration_sec=4.0, video="v.mp4"),
-            Scene(id="after", duration_sec=6.0, image="i3.png"),
+            Scene(id="after", duration_sec=6.0, video="v_after.mp4"),
             Scene(id="punchline", duration_sec=4.0, image="i4.png"),
         ],
     )
@@ -411,7 +411,11 @@ class RenderEpisodeControlFlowTests(unittest.TestCase):
 
             def short_probe_run(argv, **kwargs):
                 if argv and argv[0] == "ffprobe":
-                    return _fake_probe_result("2.0")  # duration_sec=4.0より短い
+                    # transform(v.mp4)のみ短尺(duration_sec=4.0より短い2.0秒)を返し、
+                    # after(v_after.mp4)は declared duration 通りの尺を返して警告対象から外す。
+                    if str(argv[-1]).endswith("v.mp4"):
+                        return _fake_probe_result("2.0")
+                    return _fake_probe_result("6.0")
                 Path(argv[-1]).write_bytes(b"fake-mp4")
                 return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
 
