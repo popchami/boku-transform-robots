@@ -21,6 +21,7 @@ def _write_manifest(dir_path: Path, data: dict) -> Path:
 def _minimal_manifest_data(base_dir: Path) -> dict:
     (base_dir / "image.png").touch()
     (base_dir / "transform.mp4").touch()
+    (base_dir / "after.mp4").touch()
     (base_dir / "audio.wav").touch()
     (base_dir / "sfx.wav").touch()
     (base_dir / "font.ttf").touch()
@@ -40,7 +41,7 @@ def _minimal_manifest_data(base_dir: Path) -> dict:
             },
             {"id": "before", "duration_sec": 3, "image": "image.png"},
             {"id": "transform", "duration_sec": 4, "video": "transform.mp4", "sfx": ["sfx.wav"]},
-            {"id": "after", "duration_sec": 6, "image": "image.png"},
+            {"id": "after", "duration_sec": 6, "video": "after.mp4", "sfx": ["sfx.wav"]},
             {"id": "punchline", "duration_sec": 4, "image": "image.png", "captions": ["すいこみりょく満点！"]},
         ],
     }
@@ -191,24 +192,66 @@ class ValidateEpisodeTests(unittest.TestCase):
             issues = validate_episode(episode, base)
             self.assertTrue(any(i.level == "error" and "パストラバーサル" in i.message for i in issues))
 
-    def test_video_on_non_transform_scene_is_error(self) -> None:
+    def test_video_on_non_video_scene_is_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             data = _minimal_manifest_data(base)
             data["scenes"][0]["video"] = "transform.mp4"
             episode = load_manifest(_write_manifest(base, data))
             issues = validate_episode(episode, base)
-            self.assertTrue(any(i.level == "error" and "transform シーンでのみ" in i.message for i in issues))
+            self.assertTrue(any(i.level == "error" and "シーンでのみ指定できます" in i.message for i in issues))
 
-    def test_video_on_non_transform_scene_is_error_even_if_missing(self) -> None:
+    def test_video_on_non_video_scene_is_error_even_if_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             data = _minimal_manifest_data(base)
             data["scenes"][0]["video"] = "does_not_exist.mp4"
             episode = load_manifest(_write_manifest(base, data))
             issues = validate_episode(episode, base)
-            self.assertTrue(any(i.level == "error" and "transform シーンでのみ" in i.message for i in issues))
+            self.assertTrue(any(i.level == "error" and "シーンでのみ指定できます" in i.message for i in issues))
             self.assertFalse(any("見つかりません" in i.message for i in issues))
+
+    def test_missing_after_video_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][3]["video"] = "missing.mp4"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "video が見つかりません" in i.message for i in issues))
+
+    def test_after_without_video_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            del data["scenes"][3]["video"]
+            data["scenes"][3]["image"] = "image.png"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(
+                any(i.level == "error" and "video が指定されていません" in i.message for i in issues)
+            )
+
+    def test_after_image_and_video_together_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            data["scenes"][3]["image"] = "image.png"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(
+                any(i.level == "error" and "同時に指定できません" in i.message for i in issues)
+            )
+
+    def test_after_video_invalid_extension_is_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            data = _minimal_manifest_data(base)
+            (base / "after.mov").touch()
+            data["scenes"][3]["video"] = "after.mov"
+            episode = load_manifest(_write_manifest(base, data))
+            issues = validate_episode(episode, base)
+            self.assertTrue(any(i.level == "error" and "拡張子" in i.message for i in issues))
 
     def test_transform_without_video_is_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

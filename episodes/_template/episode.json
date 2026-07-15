@@ -35,7 +35,7 @@
     {
       "id": "after",
       "duration_sec": 6,
-      "image": "episodes/ep000_template/after.png",
+      "video": "episodes/ep000_template/after.mp4",
       "narration_audio": "episodes/ep000_template/after.wav",
       "captions": ["（ロボ名）とうじょう！"],
       "sfx": ["assets/sfx/（決めポーズ音）.wav"],

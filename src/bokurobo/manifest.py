@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Any
 
 REQUIRED_SCENE_IDS = ("intro", "before", "transform", "after", "punchline")
+# SPEC(2026-07-15版): transform（変形演出）に加え、after（決めポーズ）もAI動画生成の対象。
+# 他3シーン（intro/before/punchline）は静止画のみ。
+VIDEO_ONLY_SCENE_IDS = ("transform", "after")
 ALLOWED_CATEGORIES = ("animal", "plant", "building", "food", "daily_goods")
 ALLOWED_TRANSITIONS = ("cut", "zoom")
 ALLOWED_VIDEO_EXTENSIONS = (".mp4",)
@@ -276,14 +279,14 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                 )
             )
 
-        if scene.id == "transform":
-            # SPEC(2026-07-14版): transform は AI生成動画必須、他4シーンは静止画。
+        if scene.id in VIDEO_ONLY_SCENE_IDS:
+            # SPEC(2026-07-15版): transform/after は AI生成動画必須、他3シーンは静止画。
             # 静止画フォールバックは方針と矛盾するため設けず、video必須のerrorに統一する。
             if scene.image and scene.video:
                 issues.append(
                     Issue(
                         "error",
-                        f"{where} は image と video を同時に指定できません（transform は video のみを使用します）",
+                        f"{where} は image と video を同時に指定できません（{scene.id} は video のみを使用します）",
                     )
                 )
             elif scene.video:
@@ -300,10 +303,12 @@ def validate_episode(episode: Episode, base_dir: Path) -> list[Issue]:
                         )
                     )
             else:
-                issues.append(Issue("error", f"{where}.video が指定されていません（transform は動画必須です）"))
+                issues.append(Issue("error", f"{where}.video が指定されていません（{scene.id} は動画必須です）"))
         else:
             if scene.video:
-                issues.append(Issue("error", f"{where}.video は transform シーンでのみ指定できます"))
+                issues.append(
+                    Issue("error", f"{where}.video は {VIDEO_ONLY_SCENE_IDS} シーンでのみ指定できます")
+                )
             if scene.image:
                 image_path, image_issue = _resolve_within(base_dir, scene.image, f"{where}.image")
                 if image_issue:
